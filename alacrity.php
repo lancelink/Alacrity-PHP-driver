@@ -19,12 +19,12 @@ class Alacrity {
 
 	function ServerCall($data) {
 		$head = "GET / HTTP/1.1"."\r\n";
-    $head .= "Upgrade: WebSocket"."\r\n";
-    $head .= "Connection: Upgrade"."\r\n";
-    $head .= "Host: $this->host"."\r\n";
-    $head .= "Sec-WebSocket-Version: 13"."\r\n";
-    $head .= "Sec-WebSocket-Key: LnIpBswFNVqwlPmLElCjE4yhl"."\r\n";
-    $head .= "Content-Length: ".strlen($data)."\r\n"."\r\n";
+		$head .= "Upgrade: WebSocket"."\r\n";
+		$head .= "Connection: Upgrade"."\r\n";
+		$head .= "Host: $this->host"."\r\n";
+		$head .= "Sec-WebSocket-Version: 13"."\r\n";
+		$head .= "Sec-WebSocket-Key: LnIpBswFNVqwlPmLElCjE4yhl"."\r\n";
+		$head .= "Content-Length: ".strlen($data)."\r\n"."\r\n";
 		//WebSocket handshake
 		$sock = fsockopen($this->host, $this->port, $errno, $errstr, 2);
 		fwrite($sock, $head ) or die('error:'.$errno.':'.$errstr);
