@@ -1,5 +1,5 @@
 # Alacrity-PHP-driver
-PHP websocket driver for alacrity
+PHP websocket driver for [Alacrity] (https://github.com/Cipherwraith/alacrity)
 
 # Alacrity client example
 ```php
