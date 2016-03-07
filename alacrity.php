@@ -1,12 +1,41 @@
 <?php
 
+/**
+* Alacrity PHP Driver
+*	A php websocket driver for Alacrity `https://github.com/Cipherwraith/alacrity`
+*
+* @author Lance Link <lance@bytesec.org>
+**/
+
 class Alacrity {
+
+	private $connected = false;
 
 	function __construct($host, $port) {
 		$this->host = $host;
 		$this->port = $port;
 	}
-	
+
+	function Connect() {
+		$head = "GET / HTTP/1.1"."\r\n";
+    $head .= "Upgrade: WebSocket"."\r\n";
+    $head .= "Connection: Upgrade"."\r\n";
+    $head .= "Host: $this->host"."\r\n";
+    $head .= "Sec-WebSocket-Version: 13"."\r\n";
+    $head .= "Sec-WebSocket-Key: LnIpBswFNVqwlPmLElCjE4yhl"."\r\n";
+    $head .= "Content-Length: ".strlen($data)."\r\n"."\r\n";
+		$this->sock = fsockopen($this->host, $this->port, $this->errno, $this->errstr, 5);
+		
+		//WebSocket handshake
+		fwrite($this->sock, $head) or die('error:'.$this->errno.':'.$this->errstr);
+		$headers = fread($this->sock, 2000);
+		
+		if($this->sock) {
+			$this->connected = true;
+		}
+		return $this->sock;
+	}
+
 	function Store($data, $path) {
 		$cmd_data = '{"command":"store", "data":"'.$data.'", "path":"'.$path.'"}';
 		return $this->ServerCall($cmd_data);
@@ -17,35 +46,36 @@ class Alacrity {
 		return $this->ServerCall($cmd_data);
 	}
 
+	function ViewRaw($path) {
+		$cmd_data = '{"command":"viewraw", "path":"'.$path.'"}';
+		return $this->ServerCall($cmd_data);
+	}
+
+	function Close() {
+		fclose($this->sock);
+		$this->connected = false;
+	}
+
 	function ServerCall($data) {
-		$head = "GET / HTTP/1.1"."\r\n";
-		$head .= "Upgrade: WebSocket"."\r\n";
-		$head .= "Connection: Upgrade"."\r\n";
-		$head .= "Host: $this->host"."\r\n";
-		$head .= "Sec-WebSocket-Version: 13"."\r\n";
-		$head .= "Sec-WebSocket-Key: LnIpBswFNVqwlPmLElCjE4yhl"."\r\n";
-		$head .= "Content-Length: ".strlen($data)."\r\n"."\r\n";
-		//WebSocket handshake
-		$sock = fsockopen($this->host, $this->port, $errno, $errstr, 2);
-		fwrite($sock, $head ) or die('error:'.$errno.':'.$errstr);
-		$headers = fread($sock, 2000);
-		fwrite($sock, $this->_hybi10Encode($data)) or die('error:'.$errno.':'.$errstr);
-		$wsdata = fread($sock, 2000);
-		fclose($sock);
+		if(!$this->connected)
+			die("Websocket not connected");
+		// Send data
+		fwrite($this->sock, $this->_hybi10Encode($data)) or die('error:'.$this->errno.':'.$this->errstr);
+		$wsdata = fread($this->sock, 2000);
 
 		return $this->_hybi10Decode($wsdata)['payload'];
 	}
 
 	private function _hybi10Decode($data) {
 		$payloadLength 		= '';
-		$mask 			= '';
+		$mask 						= '';
 		$unmaskedPayload 	= '';
-		$decodedData 		= array();
+		$decodedData 			= array();
 
 		$firstByteBinary 	= sprintf('%08b', ord($data[0]));		
-		$secondByteBinary 	= sprintf('%08b', ord($data[1]));
-		$opcode 		= bindec(substr($firstByteBinary, 4, 4));
-		$isMasked 		= ($secondByteBinary[0] == '1') ? true : false;
+		$secondByteBinary = sprintf('%08b', ord($data[1]));
+		$opcode 					= bindec(substr($firstByteBinary, 4, 4));
+		$isMasked 				= ($secondByteBinary[0] == '1') ? true : false;
 		$payloadLength 		= ord($data[1]) & 127;
 
 		$decodedData['type'] = 'text';
