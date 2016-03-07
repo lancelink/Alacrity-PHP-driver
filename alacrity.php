@@ -2,7 +2,7 @@
 
 /**
 * Alacrity PHP Driver
-*	A php websocket driver for Alacrity `https://github.com/Cipherwraith/alacrity`
+* A php websocket driver for Alacrity `https://github.com/Cipherwraith/alacrity`
 *
 * @author Lance Link <lance@bytesec.org>
 **/
@@ -18,12 +18,12 @@ class Alacrity {
 
 	function Connect() {
 		$head = "GET / HTTP/1.1"."\r\n";
-    $head .= "Upgrade: WebSocket"."\r\n";
-    $head .= "Connection: Upgrade"."\r\n";
-    $head .= "Host: $this->host"."\r\n";
-    $head .= "Sec-WebSocket-Version: 13"."\r\n";
-    $head .= "Sec-WebSocket-Key: LnIpBswFNVqwlPmLElCjE4yhl"."\r\n";
-    $head .= "Content-Length: ".strlen($data)."\r\n"."\r\n";
+		$head .= "Upgrade: WebSocket"."\r\n";
+		$head .= "Connection: Upgrade"."\r\n";
+		$head .= "Host: $this->host"."\r\n";
+		$head .= "Sec-WebSocket-Version: 13"."\r\n";
+		$head .= "Sec-WebSocket-Key: LnIpBswFNVqwlPmLElCjE4yhl"."\r\n";
+		$head .= "Content-Length: ".strlen($data)."\r\n"."\r\n";
 		$this->sock = fsockopen($this->host, $this->port, $this->errno, $this->errstr, 5);
 		
 		//WebSocket handshake
@@ -68,14 +68,14 @@ class Alacrity {
 
 	private function _hybi10Decode($data) {
 		$payloadLength 		= '';
-		$mask 						= '';
+		$mask 			= '';
 		$unmaskedPayload 	= '';
-		$decodedData 			= array();
+		$decodedData 		= array();
 
 		$firstByteBinary 	= sprintf('%08b', ord($data[0]));		
-		$secondByteBinary = sprintf('%08b', ord($data[1]));
-		$opcode 					= bindec(substr($firstByteBinary, 4, 4));
-		$isMasked 				= ($secondByteBinary[0] == '1') ? true : false;
+		$secondByteBinary 	= sprintf('%08b', ord($data[1]));
+		$opcode 		= bindec(substr($firstByteBinary, 4, 4));
+		$isMasked 		= ($secondByteBinary[0] == '1') ? true : false;
 		$payloadLength 		= ord($data[1]) & 127;
 
 		$decodedData['type'] = 'text';
