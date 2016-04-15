@@ -5,11 +5,12 @@
 * A php websocket driver for Alacrity `https://github.com/Cipherwraith/alacrity`
 *
 * @author Lance Link <lance@bytesec.org>
+* @author Fredrick Brennan <copypaste@kittens.ph>
 **/
 
+class AlacrityException extends Exception {};
 class Alacrity {
-
-	private $connected = false;
+	public $connected = false;
 
 	function __construct($host, $port) {
 		$this->host = $host;
@@ -23,12 +24,17 @@ class Alacrity {
 		$head .= "Host: $this->host"."\r\n";
 		$head .= "Sec-WebSocket-Version: 13"."\r\n";
 		$head .= "Sec-WebSocket-Key: LnIpBswFNVqwlPmLElCjE4yhl"."\r\n";
-		$head .= "Content-Length: ".strlen($data)."\r\n"."\r\n";
-		$this->sock = fsockopen($this->host, $this->port, $this->errno, $this->errstr, 5);
+		$head .= "Content-Length: 0\r\n\r\n";
+		$errno = $errstr = NULL;
+		$this->sock = fsockopen($this->host, $this->port, $errno, $errstr, 5);
+
+		if (!$this->sock) throw new AlacrityException("Could not connect to alacrity. fsockopen call failed with code $errno and message \"$errstr\"");
 		
 		//WebSocket handshake
-		fwrite($this->sock, $head) or die('error:'.$this->errno.':'.$this->errstr);
+		$ret = fwrite($this->sock, $head);
+		if (!$ret) throw new AlacrityException("Could not send websocket header to alacrity");
 		$headers = fread($this->sock, 2000);
+		if (!$headers) throw new AlacrityException("Alacrity returned no headers");
 		
 		if($this->sock) {
 			$this->connected = true;
@@ -37,18 +43,32 @@ class Alacrity {
 	}
 
 	function Store($data, $path) {
-		$cmd_data = '{"command":"store", "data":"'.$data.'", "path":"'.$path.'"}';
-		return $this->ServerCall($cmd_data);
+		$cmd_data = array("command" => "store", "data" => base64_encode($data), "path" => $path, "password" => "u2HZxn3LX4aRLZpX");
+		$ret = $this->ServerCall(json_encode($cmd_data));
+		$retj = json_decode($ret, true);
+		if (in_array("error", $retj)) {
+			throw new AlacrityException("Store command failed. Alacrity response: $ret");
+		} else {
+			return $retj;
+		}
 	}
 
 	function View($path) {
-		$cmd_data = '{"command":"view", "path":"'.$path.'"}';
-		return $this->ServerCall($cmd_data);
+		$cmd_data = array("command" => "view", "path" => $path, "password" => "u2HZxn3LX4aRLZpX");
+		$ret = $this->ServerCall(json_encode($cmd_data));
+		$retj = json_decode($ret, true);
+		if (in_array("error", $retj)) {
+			throw new AlacrityException("Store command failed. Alacrity response: $ret");
+		} else {
+			$retj['view'] = base64_decode($retj['view']);
+			return $retj;
+		}
 	}
 
 	function ViewRaw($path) {
-		$cmd_data = '{"command":"viewraw", "path":"'.$path.'"}';
-		return $this->ServerCall($cmd_data);
+		$cmd_data = array("command" => "viewraw", "path" => $path, "password" => "u2HZxn3LX4aRLZpX");
+		$ret = $this->ServerCall(json_encode($cmd_data));
+		return $ret;
 	}
 
 	function Close() {
@@ -58,10 +78,14 @@ class Alacrity {
 
 	function ServerCall($data) {
 		if(!$this->connected)
-			die("Websocket not connected");
+			throw new AlacrityException('Not connected');
 		// Send data
-		fwrite($this->sock, $this->_hybi10Encode($data)) or die('error:'.$this->errno.':'.$this->errstr);
-		$wsdata = fread($this->sock, 2000);
+		$retr = fwrite($this->sock, $this->_hybi10Encode($data));
+	
+		if (!$retr) throw new AlacrityException("Could not send websocket header to alacrity");
+		$wsdata = fread($this->sock, 2048);
+
+		if (!$wsdata) throw new AlacrityException("Received an empty reply from alacrity");
 
 		return $this->_hybi10Decode($wsdata)['payload'];
 	}
