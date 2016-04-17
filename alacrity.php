@@ -10,7 +10,8 @@
 
 class AlacrityException extends Exception {};
 class Alacrity {
-	public $connected = false;
+	private $connected = false;
+	private $password = "u2HZxn3LX4aRLZpX";
 
 	function __construct($host, $port) {
 		$this->host = $host;
@@ -43,7 +44,7 @@ class Alacrity {
 	}
 
 	function Store($data, $path) {
-		$cmd_data = array("command" => "store", "data" => base64_encode($data), "path" => $path, "password" => "u2HZxn3LX4aRLZpX");
+		$cmd_data = array("command" => "store", "data" => base64_encode($data), "path" => $path, "password" => $this->password);
 		$ret = $this->ServerCall(json_encode($cmd_data));
 		$retj = json_decode($ret, true);
 		if (in_array("error", $retj)) {
@@ -54,7 +55,7 @@ class Alacrity {
 	}
 
 	function View($path) {
-		$cmd_data = array("command" => "view", "path" => $path, "password" => "u2HZxn3LX4aRLZpX");
+		$cmd_data = array("command" => "view", "path" => $path, "password" => $this->password);
 		$ret = $this->ServerCall(json_encode($cmd_data));
 		$retj = json_decode($ret, true);
 		if (in_array("error", $retj)) {
@@ -66,7 +67,7 @@ class Alacrity {
 	}
 
 	function ViewRaw($path) {
-		$cmd_data = array("command" => "viewraw", "path" => $path, "password" => "u2HZxn3LX4aRLZpX");
+		$cmd_data = array("command" => "viewraw", "path" => $path, "password" => $this->password);
 		$ret = $this->ServerCall(json_encode($cmd_data));
 		return $ret;
 	}
@@ -83,7 +84,20 @@ class Alacrity {
 		$retr = fwrite($this->sock, $this->_hybi10Encode($data));
 	
 		if (!$retr) throw new AlacrityException("Could not send websocket header to alacrity");
-		$wsdata = fread($this->sock, 2048);
+
+		$wsdata = '';
+		$dyread = '';
+		while (1) {
+			$dyread = fread($this->sock, 2048);
+			$tmp = substr($this->_hybi10Decode($dyread)['payload'], -5); // Detect the `BREAK` (EOF) of Alacrity response
+			if($tmp != "BREAK") {
+				$wsdata .= $dyread;
+			} else {
+				$dyread = substr($dyread, 0, -9); // Removes the `BREAK` (EOF) of Alacrity response from the last chunk of data and append to data pool
+				$wsdata .= $dyread;
+				break;
+			}
+		}
 
 		if (!$wsdata) throw new AlacrityException("Received an empty reply from alacrity");
 
