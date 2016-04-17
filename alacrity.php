@@ -93,7 +93,7 @@ class Alacrity {
 			if($tmp != "BREAK") {
 				$wsdata .= $dyread;
 			} else {
-				$dyread = substr($dyread, 0, -9); // Removes the `BREAK` (EOF) of Alacrity response from the last chunk of data and append to data pool
+				$dyread = substr($dyread, 0, -9); // Removes the `BREAK` (EOF) of Alacrity response from the last chunk of data and append the last chunk of data to data pool
 				$wsdata .= $dyread;
 				break;
 			}
