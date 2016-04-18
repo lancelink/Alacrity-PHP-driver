@@ -88,7 +88,7 @@ class Alacrity {
 		$wsdata = '';
 		$dyread = '';
 		while (1) {
-			$dyread = fread($this->sock, 65536); // fread data length can be adjusted
+			$dyread = fread($this->sock, 262144); // fread data length can be adjusted
 			$tmp = substr($this->_hybi10Decode($dyread)['payload'], -5); // Detect the `BREAK` (EOF) of Alacrity response
 			if($tmp != "BREAK") {
 				$wsdata .= $dyread;
