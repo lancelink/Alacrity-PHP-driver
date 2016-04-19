@@ -53,15 +53,20 @@ class Alacrity {
 	function HttpStore($data, $path) {
 		$header 	= array("Content-Type: multipart/form-data");
 		$fields 	= array("page" => "@".$data, "password" => $this->password, "loc" => $path);
-		$resource = curl_init();
-		curl_setopt($resource, CURLOPT_URL, $this->http_url);
+		$resource = curl_init($this->http_url);
 		curl_setopt($resource, CURLOPT_HTTPHEADER, $header);
 		curl_setopt($resource, CURLOPT_RETURNTRANSFER, 1);
 		curl_setopt($resource, CURLOPT_POST, 1);
 		curl_setopt($resource, CURLOPT_POSTFIELDS, $fields);
 		$result = curl_exec($resource);
+		$info = curl_errno($resource);
 		curl_close($resource);
-		return $result;
+
+		if (!$info) {
+			return $result;
+		} else {
+			throw new AlacrityException("Alacrity HTTP post error");
+		}
 	}
 
 	function Store($data, $path) {
