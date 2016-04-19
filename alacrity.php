@@ -11,7 +11,7 @@
 class AlacrityException extends Exception {};
 class Alacrity {
 	private $connected = false;
-	private $password = "u2HZxn3LX4aRLZpX";
+	private $password = "null";
 
 	function __construct($host, $port) {
 		$this->host = $host;
