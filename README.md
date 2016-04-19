@@ -7,7 +7,7 @@ require('alacrity.php');
 
 $alacrity = new Alacrity(ALACRITY_SERVER_IP, ALACRITY_PORT); // Initialize alacrity object
 
-$alacrity->Connect(); // Connect to alacrity
+$alacrity->Connect(ALACRITY_PASSWORD); // Connect to alacrity with password from Alacrity, will fail if no or wrong password
 
 $store_response = $alacrity->Store("data_here", "/path/tofile.html"); // store data to path
 $view_response  = $alacrity->View("/path/tofile.html"); // view json data by path
