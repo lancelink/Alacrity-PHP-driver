@@ -11,14 +11,21 @@
 class AlacrityException extends Exception {};
 class Alacrity {
 	private $connected = false;
-	private $password = "null";
+	private $password  = "null";
+	private $http_url  = "null";
 
-	function __construct($host, $port) {
-		$this->host = $host;
-		$this->port = $port;
+	function __construct($host, $port, $upass, $shttp_url) {
+		if(isset($host) && isset($port) && isset($upass) && isset($shttp_url)) {
+			$this->host = $host;
+			$this->port = $port;
+			$this->password = $upass;
+			$this->http_url = $shttp_url;
+		} else {
+			throw new AlacrityException("Construct data not set");
+		}
 	}
 
-	function Connect($upass) {
+	function Connect() {
 		$head = "GET / HTTP/1.1"."\r\n";
 		$head .= "Upgrade: WebSocket"."\r\n";
 		$head .= "Connection: Upgrade"."\r\n";
@@ -30,18 +37,31 @@ class Alacrity {
 		$this->sock = fsockopen($this->host, $this->port, $errno, $errstr, 5);
 
 		if (!$this->sock) throw new AlacrityException("Could not connect to alacrity. fsockopen call failed with code $errno and message \"$errstr\"");
-		
+			
 		//WebSocket handshake
 		$ret = fwrite($this->sock, $head);
 		if (!$ret) throw new AlacrityException("Could not send websocket header to alacrity");
 		$headers = fread($this->sock, 2000);
 		if (!$headers) throw new AlacrityException("Alacrity returned no headers");
-		
+			
 		if($this->sock) {
 			$this->connected = true;
-			$this->password = $upass;
 		}
 		return $this->sock;
+	}
+
+	function HttpStore($data, $path) {
+		$header 	= array("Content-Type: multipart/form-data");
+		$fields 	= array("page" => "@".$data, "password" => $this->password, "loc" => $path);
+		$resource = curl_init();
+		curl_setopt($resource, CURLOPT_URL, $this->http_url);
+		curl_setopt($resource, CURLOPT_HTTPHEADER, $header);
+		curl_setopt($resource, CURLOPT_RETURNTRANSFER, 1);
+		curl_setopt($resource, CURLOPT_POST, 1);
+		curl_setopt($resource, CURLOPT_POSTFIELDS, $fields);
+		$result = curl_exec($resource);
+		curl_close($resource);
+		return $result;
 	}
 
 	function Store($data, $path) {
@@ -74,8 +94,10 @@ class Alacrity {
 	}
 
 	function Close() {
-		fclose($this->sock);
-		$this->connected = false;
+		if($this->connected) {
+			fclose($this->sock);
+			$this->connected = false;
+		}
 	}
 
 	function ServerCall($data) {
