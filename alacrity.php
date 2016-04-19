@@ -18,7 +18,7 @@ class Alacrity {
 		$this->port = $port;
 	}
 
-	function Connect() {
+	function Connect($upass) {
 		$head = "GET / HTTP/1.1"."\r\n";
 		$head .= "Upgrade: WebSocket"."\r\n";
 		$head .= "Connection: Upgrade"."\r\n";
@@ -39,6 +39,7 @@ class Alacrity {
 		
 		if($this->sock) {
 			$this->connected = true;
+			$this->password = $upass;
 		}
 		return $this->sock;
 	}
